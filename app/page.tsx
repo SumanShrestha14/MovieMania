@@ -4,9 +4,15 @@ import MovieCard from "@/components/MovieCard";
 import PaginationControls from "@/components/PaginationControls";
 import SkeletonLoading from "@/components/SkeletonLoading";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 const apiKey = "15094101c7bade2409881441afca31a4";
+
+const SearchWrapper = ({ children }: { children: (search: string | null) => React.ReactNode }) => {
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search");
+  return children(search);
+};
 
 export default function PopularMovies() {
   const [allMovies, setAllMovies] = useState<any[]>([]);
@@ -15,9 +21,7 @@ export default function PopularMovies() {
   const [totalPages, setTotalPages] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
 
-  const searchParams = useSearchParams();
-  const search = searchParams.get("search");
-
+  //handle paginations 
   const handlePrev = () => {
     if (page > 1) setPage((prev) => prev - 1);
   };
@@ -26,6 +30,79 @@ export default function PopularMovies() {
     if (page < totalPages) setPage((prev) => prev + 1);
   };
 
+  return (
+    <div>
+      <Suspense fallback={<div>Loading search...</div>}>
+        <SearchWrapper>
+          {(search) => (
+            <>
+              <h2 className="text-2xl font-bold">
+                {search ? "Search Result for " + search : "Popular Movies"}
+              </h2>
+              
+              <MovieList 
+                search={search}
+                page={page}
+                setAllMovies={setAllMovies}
+                setLoading={setLoading}
+                setError={setError}
+                setTotalPages={setTotalPages}
+              />
+
+              <PaginationControls
+                page={page}
+                totalPages={totalPages}
+                onPrev={handlePrev}
+                onNext={handleNext}
+              />
+
+              <div className="p-6">
+                {loading && <SkeletonLoading />}
+                {error && <p className="text-red-600">Error: {error}</p>}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 mb-8">
+                  {allMovies.map((movie) => (
+                    <MovieCard
+                      key={movie.id}
+                      id={movie.id}
+                      title={movie.title}
+                      rating={movie.vote_average}
+                      posterUrl={`https://image.tmdb.org/t/p/w500/${movie.poster_path}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <PaginationControls
+                page={page}
+                totalPages={totalPages}
+                onPrev={handlePrev}
+                onNext={handleNext}
+              />
+            </>
+          )}
+        </SearchWrapper>
+      </Suspense>
+    </div>
+  );
+}
+
+// Separate component for the movie fetching logic
+function MovieList({
+  search,
+  page,
+  setAllMovies,
+  setLoading,
+  setError,
+  setTotalPages
+}: {
+  search: string | null;
+  page: number;
+  setAllMovies: React.Dispatch<React.SetStateAction<any[]>>;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+  setTotalPages: React.Dispatch<React.SetStateAction<number>>;
+}) {
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
@@ -54,43 +131,7 @@ export default function PopularMovies() {
     };
 
     fetchMovies();
-  }, [page, search]);
+  }, [page, search, setAllMovies, setError, setLoading, setTotalPages]);
 
-  return (
-    <div>
-      <h2 className="text-2xl font-bold">
-        {search ? "Search Result for " + search : "Popular Movies"}
-      </h2>
-      <PaginationControls
-        page={page}
-        totalPages={totalPages}
-        onPrev={handlePrev}
-        onNext={handleNext}
-      />
-
-      <div className="p-6">
-        {loading && <SkeletonLoading />}
-        {error && <p className="text-red-600">Error: {error}</p>}
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 mb-8">
-          {allMovies.map((movie) => (
-            <MovieCard
-              key={movie.id}
-              id={movie.id}
-              title={movie.title}
-              rating={movie.vote_average}
-              posterUrl={`https://image.tmdb.org/t/p/w500/${movie.poster_path}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <PaginationControls
-        page={page}
-        totalPages={totalPages}
-        onPrev={handlePrev}
-        onNext={handleNext}
-      />
-    </div>
-  );
+  return null;
 }
