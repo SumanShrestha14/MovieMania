@@ -33,15 +33,21 @@ cd movieapp
 #### First install all dependencies 
 ```bash 
   npm install
+  or
   bun install
+  or
   yarn install
+  or
   pnpm install
 ```
 #### Now run project 
 ```bash
-  npm run dev 
+  npm run dev
+  or 
   bun run dev
+  or
   yarn dev
+  or
   pnpm run dev
 ```
 
